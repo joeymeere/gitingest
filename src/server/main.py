@@ -5,8 +5,8 @@ from pathlib import Path
 from typing import Dict
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi import FastAPI, Request, Depends, HTTPException
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.trustedhost import TrustedHostMiddleware
@@ -14,6 +14,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from server.routers import download, dynamic, index
 from server.server_config import templates
 from server.server_utils import lifespan, limiter, rate_limit_exception_handler
+from server.auth import get_api_key
 
 # Load environment variables from .env file
 load_dotenv()
@@ -90,6 +91,26 @@ async def api_docs(request: Request) -> HTMLResponse:
     """
     return templates.TemplateResponse("api.jinja", {"request": request})
 
+@app.get("/api/info")
+async def api_info(api_key: str = Depends(get_api_key)) -> Dict:
+    """
+    Get API information and status.
+
+    Parameters
+    ----------
+    api_key : str
+        The API key for authentication.
+
+    Returns
+    -------
+    Dict
+        API information and status.
+    """
+    return {
+        "status": "active",
+        "version": "1.0",
+        "authenticated": True
+    }
 
 @app.get("/robots.txt")
 async def robots() -> FileResponse:
